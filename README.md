@@ -29,7 +29,7 @@ This script helps documentation maintainers:
 
 1. Download the script:
 ```bash
-curl -O https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/track-doc-changes.py
+curl -O https://raw.githubusercontent.com/ngayerie/spm-doc-updates-tracker/main/track-doc-changes.py
 chmod +x track-doc-changes.py
 ```
 
