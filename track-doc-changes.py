@@ -129,6 +129,24 @@ COMMON_PRODUCTS = {
     'terraform': 'Terraform',
 }
 
+# Mapping from changelog directory names to doc directory names
+# (only for directories that differ between changelog and docs)
+CHANGELOG_TO_DOCS_MAP = {
+    'access': 'cloudflare-one',
+    'audit-logs': 'fundamentals',
+    'browser-isolation': 'cloudflare-one',
+    'casb': 'cloudflare-one',
+    'cloudflare-tunnel': 'cloudflare-one',
+    'dex': 'cloudflare-one',
+    'dlp': 'cloudflare-one',
+    'email-security-cf1': 'cloudflare-one',
+    'gateway': 'cloudflare-one',
+    'risk-score': 'cloudflare-one',
+    'sdk': 'terraform',
+    'workers-for-platforms': 'cloudflare-for-platforms',
+    'zero-trust-warp': 'warp-client',
+}
+
 
 def get_tracked_products(categories=None):
     """Get products to track based on selected categories.
@@ -196,6 +214,33 @@ def run_git_command(cmd):
     return result.stdout.strip()
 
 
+def get_changelog_commits_in_range(start_date, end_date):
+    """Get commits for changelog directory within date range."""
+    date_filter = f"--since='{start_date}' --until='{end_date}'"
+    path_filter = '-- src/content/changelog/'
+    
+    cmd = f"git log {date_filter} --date-order --pretty=format:'%H|%s|%ci|%cn' {path_filter}"
+    output = run_git_command(cmd)
+    
+    if not output:
+        return []
+    
+    commits = []
+    for line in output.split('\n'):
+        if line:
+            parts = line.split('|', 3)
+            if len(parts) >= 4:
+                hash_val, subject, date, author = parts
+                commits.append({
+                    'hash': hash_val,
+                    'subject': subject,
+                    'date': date,
+                    'author': author
+                })
+    
+    return commits
+
+
 def get_commits_in_range(start_date, end_date, product_paths):
     """Get commits for specified product paths within date range."""
     date_filter = f"--since='{start_date}' --until='{end_date}'"
@@ -255,6 +300,115 @@ def extract_product_from_path(file_path, tracked_products):
         product_dir = match.group(1)
         return tracked_products.get(product_dir, None)
     return None
+
+
+def extract_changelog_product(file_path, tracked_products):
+    """Extract product name from changelog file path, mapping to doc categories."""
+    match = re.match(r'src/content/changelog/([^/]+)/', file_path)
+    if match:
+        changelog_dir = match.group(1)
+        # Map changelog directory to docs directory if different
+        docs_dir = CHANGELOG_TO_DOCS_MAP.get(changelog_dir, changelog_dir)
+        return tracked_products.get(docs_dir, None)
+    return None
+
+
+def parse_changelog_frontmatter(file_path):
+    """Parse frontmatter from a changelog file to extract title and date."""
+    full_path = os.path.join(REPO_PATH, file_path)
+    if not os.path.exists(full_path):
+        return None, None
+    
+    try:
+        with open(full_path, 'r', encoding='utf-8') as f:
+            content = f.read(2000)  # Read first 2000 chars (enough for frontmatter)
+    except Exception:
+        return None, None
+    
+    title = None
+    date = None
+    in_frontmatter = False
+    
+    for line in content.split('\n'):
+        if line.strip() == '---':
+            if not in_frontmatter:
+                in_frontmatter = True
+                continue
+            else:
+                break
+        if in_frontmatter:
+            if line.startswith('title:'):
+                title = line.replace('title:', '').strip()
+                # Remove quotes if present
+                if title.startswith('"') and title.endswith('"'):
+                    title = title[1:-1]
+                elif title.startswith("'") and title.endswith("'"):
+                    title = title[1:-1]
+            elif line.startswith('date:'):
+                date = line.replace('date:', '').strip()
+    
+    return title, date
+
+
+def get_changelog_entries_in_date_range(start_date, end_date, tracked_products):
+    """Scan changelog directory and return entries within the date range based on frontmatter date."""
+    changelog_dir = os.path.join(REPO_PATH, 'src/content/changelog')
+    if not os.path.isdir(changelog_dir):
+        return {}
+    
+    changelog_by_product = defaultdict(list)
+    
+    # Walk through all changelog subdirectories
+    for product_dir in os.listdir(changelog_dir):
+        product_path = os.path.join(changelog_dir, product_dir)
+        if not os.path.isdir(product_path):
+            continue
+        
+        # Map changelog directory to docs directory
+        docs_dir = CHANGELOG_TO_DOCS_MAP.get(product_dir, product_dir)
+        product_name = tracked_products.get(docs_dir)
+        
+        if not product_name:
+            continue
+        
+        # Scan all .mdx files in this product's changelog directory
+        for filename in os.listdir(product_path):
+            if not filename.endswith('.mdx'):
+                continue
+            
+            file_path = f'src/content/changelog/{product_dir}/{filename}'
+            title, entry_date = parse_changelog_frontmatter(file_path)
+            
+            if not entry_date:
+                continue
+            
+            # Check if entry date is within the range
+            if start_date <= entry_date <= end_date:
+                url = changelog_file_to_url(file_path)
+                changelog_by_product[product_name].append({
+                    'title': title or filename,
+                    'url': url,
+                    'date': entry_date,
+                    'file': file_path
+                })
+    
+    # Sort entries by date within each product
+    for product in changelog_by_product:
+        changelog_by_product[product].sort(key=lambda x: x.get('date', ''), reverse=True)
+    
+    return changelog_by_product
+
+
+def changelog_file_to_url(file_path):
+    """Convert changelog file path to documentation URL."""
+    if not file_path.startswith('src/content/changelog/'):
+        return None
+    
+    # Remove src/content/ prefix and file extension
+    path = file_path.replace('src/content/', '')
+    path = re.sub(r'\.mdx?$', '', path)
+    
+    return f"{BASE_URL}/{path}/"
 
 
 def file_to_url(file_path):
@@ -326,6 +480,30 @@ def generate_summary(commits_by_product, month_name):
     return '\n'.join(output)
 
 
+def generate_changelog_summary(changelog_by_product, month_name):
+    """Generate formatted summary of new changelog entries."""
+    output = []
+    output.append(f"\n\n# New Changelog Entries - {month_name}\n")
+    
+    has_entries = False
+    for product, entries in sorted(changelog_by_product.items()):
+        if not entries:
+            continue
+        
+        has_entries = True
+        for entry in entries:
+            title = entry.get('title', 'Untitled')
+            url = entry.get('url', '')
+            output.append(f"\nNew changelog entry for {product}: {title}")
+            if url:
+                output.append(f"   - {url}")
+    
+    if not has_entries:
+        output.append("\nNo new changelog entries found for tracked products.")
+    
+    return '\n'.join(output)
+
+
 def main():
     global REPO_PATH
     
@@ -391,14 +569,14 @@ def main():
     print(f"Tracking changes for {month_name}...")
     print(f"Products: {', '.join(products_to_track)}")
     
-    # Get commits
+    # Get commits for docs
     commits = get_commits_in_range(
         start_date.strftime('%Y-%m-%d'),
         end_date.strftime('%Y-%m-%d'),
         products_to_track
     )
     
-    print(f"Found {len(commits)} commits")
+    print(f"Found {len(commits)} doc commits")
     
     # Filter and organize commits
     commits_by_product = defaultdict(list)
@@ -415,17 +593,30 @@ def main():
             if product and commit not in commits_by_product[product]:
                 commits_by_product[product].append(commit)
     
-    # Generate summary
+    # Get changelog entries based on frontmatter date (not commit date)
+    changelog_by_product = get_changelog_entries_in_date_range(
+        start_date.strftime('%Y-%m-%d'),
+        end_date.strftime('%Y-%m-%d'),
+        tracked_products
+    )
+    
+    total_changelog_entries = sum(len(entries) for entries in changelog_by_product.values())
+    print(f"Found {total_changelog_entries} changelog entries")
+    
+    # Generate summaries
     summary = generate_summary(commits_by_product, month_name)
+    changelog_summary = generate_changelog_summary(changelog_by_product, month_name)
+    
+    full_output = summary + changelog_summary
     
     # Output
     if args.output:
         with open(args.output, 'w') as f:
-            f.write(summary)
+            f.write(full_output)
         print(f"\nSummary written to {args.output}")
     else:
         print("\n" + "="*80)
-        print(summary)
+        print(full_output)
     
     return 0
 

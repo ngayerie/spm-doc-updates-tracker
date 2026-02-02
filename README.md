@@ -15,6 +15,8 @@ This script helps documentation maintainers:
 
 - **Date-based filtering**: Track changes by month using merge dates
 - **Product-specific tracking**: Focus on specific product areas (Cache, DNS, SSL/TLS, etc.)
+- **Category-based organization**: Group products into 5 categories (Application Performance, Application Security, Cloudflare One, Platform, Developer Platform)
+- **Changelog tracking**: Automatically includes new changelog entries for tracked products
 - **Smart filtering**: Automatically excludes trivial changes like typos and formatting
 - **Section detection**: Identifies which sections of a page were modified
 - **Clean output**: Generates formatted summaries ready for copy-paste into Confluence or other tools
@@ -125,8 +127,9 @@ The following products are always included regardless of category selection:
 
 ## Output Format
 
-The script generates output in the following format:
+The script generates output with two sections:
 
+### Documentation Updates
 ```
 # Documentation Updates - December 2024
 
@@ -137,13 +140,28 @@ Update to the DNS documentation: Update DNSSEC configuration steps
    - https://developers.cloudflare.com/dns/dnssec/ - Updated: Configuration, Troubleshooting
 ```
 
+### Changelog Entries
+
+Changelog entries are filtered by the `date` field in their frontmatter, not by git commit date. This ensures entries appear in the correct month even if they were added to the repository later.
+
+```
+# New Changelog Entries - December 2024
+
+New changelog entry for WAF: WAF Release - 2024-12-15
+   - https://developers.cloudflare.com/changelog/waf/2024-12-15-waf-release/
+
+New changelog entry for Workers: Workers now supports Node.js 20
+   - https://developers.cloudflare.com/changelog/workers/2024-12-10-nodejs-20/
+```
+
 ## Customization
 
 You can customize the script by editing:
 
 1. **CATEGORIES**: Add or remove products within categories
-2. **TRIVIAL_PATTERNS**: Adjust what counts as trivial changes
-3. **SIGNIFICANT_PATTERNS**: Define patterns for significant changes
+2. **CHANGELOG_TO_DOCS_MAP**: Map changelog directories to doc directories (for directories with different names)
+3. **TRIVIAL_PATTERNS**: Adjust what counts as trivial changes
+4. **SIGNIFICANT_PATTERNS**: Define patterns for significant changes
 
 ## Examples
 
