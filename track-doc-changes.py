@@ -12,26 +12,147 @@ from collections import defaultdict
 from pathlib import Path
 import argparse
 
-# Product areas to track (Application Performance related)
-TRACKED_PRODUCTS = {
-    'cache': 'Cache',
-    'speed': 'Speed',
-    'load-balancing': 'Load Balancing',
-    'automatic-platform-optimization': 'Automatic Platform Optimization',
-    'ssl': 'SSL/TLS',
-    'dns': 'DNS',
-    'spectrum': 'Spectrum',
-    'health-checks': 'Health Checks',
-    'support': 'Support',
-    'logs': 'Logs',
-    'analytics': 'Analytics',
-    'cloudflare-for-platforms': 'Cloudflare for SaaS',
-    'notifications': 'Notifications',
-    'rules': 'Rules',
-    'smart-shield': 'Smart Shield',
-    'terraform': 'Terraform',
-    'version-management': 'Version Management',
+# Product categories mapping
+CATEGORIES = {
+    'app_perf': {
+        'name': 'Application Performance',
+        'products': {
+            'argo-smart-routing': 'Argo Smart Routing',
+            'automatic-platform-optimization': 'Automatic Platform Optimization',
+            'cache': 'Cache',
+            'cloudflare-for-platforms': 'Cloudflare for SaaS',
+            'data-localization': 'Data Localization',
+            'dns': 'DNS',
+            'health-checks': 'Health Checks',
+            'load-balancing': 'Load Balancing',
+            'logs': 'Logs',
+            'rules': 'Rules',
+            'speed': 'Speed',
+            'ssl': 'SSL/TLS',
+            'version-management': 'Version Management',
+            '1.1.1.1': '1.1.1.1',
+        }
+    },
+    'app_sec': {
+        'name': 'Application Security',
+        'products': {
+            'api-shield': 'API Shield',
+            'bots': 'Bot Management',
+            'cloudflare-challenges': 'Cloudflare Challenges',
+            'ddos-protection': 'DDoS Protection',
+            'firewall': 'Firewall',
+            'log-explorer': 'Log Explorer',
+            'page-shield': 'Page Shield',
+            'ruleset-engine': 'Ruleset Engine',
+            'security': 'Security',
+            'security-center': 'Security Center',
+            'smart-shield': 'Smart Shield',
+            'turnstile': 'Turnstile',
+            'waf': 'WAF',
+            'waiting-room': 'Waiting Room',
+        }
+    },
+    'cf1': {
+        'name': 'Cloudflare One',
+        'products': {
+            'browser-rendering': 'Browser Rendering',
+            'byoip': 'BYOIP',
+            'china-network': 'China Network',
+            'client-ip-geolocation': 'Client IP Geolocation',
+            'cloudflare-one': 'Cloudflare One',
+            'email-security': 'Email Security',
+            'magic-cloud-networking': 'Magic Cloud Networking',
+            'magic-firewall': 'Magic Firewall',
+            'magic-network-monitoring': 'Magic Network Monitoring',
+            'magic-transit': 'Magic Transit',
+            'magic-wan': 'Magic WAN',
+            'network': 'Network',
+            'network-error-logging': 'Network Error Logging',
+            'network-interconnect': 'Network Interconnect',
+            'spectrum': 'Spectrum',
+            'warp-client': 'WARP Client',
+        }
+    },
+    'platform': {
+        'name': 'Platform',
+        'products': {
+            'analytics': 'Analytics',
+            'billing': 'Billing',
+            'notifications': 'Notifications',
+            'pulumi': 'Pulumi',
+            'radar': 'Radar',
+            'registrar': 'Registrar',
+            'tenant': 'Tenant',
+            'time-services': 'Time Services',
+        }
+    },
+    'dev_plat': {
+        'name': 'Developer Platform',
+        'products': {
+            'agents': 'Agents',
+            'ai-crawl-control': 'AI Crawl Control',
+            'ai-gateway': 'AI Gateway',
+            'ai-search': 'AI Search',
+            'containers': 'Containers',
+            'd1': 'D1',
+            'dmarc-management': 'DMARC Management',
+            'durable-objects': 'Durable Objects',
+            'email-routing': 'Email Routing',
+            'google-tag-gateway': 'Google Tag Gateway',
+            'hyperdrive': 'Hyperdrive',
+            'images': 'Images',
+            'kv': 'KV',
+            'pages': 'Pages',
+            'pipelines': 'Pipelines',
+            'queues': 'Queues',
+            'r2': 'R2',
+            'r2-sql': 'R2 SQL',
+            'realtime': 'Realtime',
+            'sandbox': 'Sandbox',
+            'secrets-store': 'Secrets Store',
+            'stream': 'Stream',
+            'vectorize': 'Vectorize',
+            'web3': 'Web3',
+            'workers': 'Workers',
+            'workers-ai': 'Workers AI',
+            'workers-vpc': 'Workers VPC',
+            'workflows': 'Workflows',
+            'zaraz': 'Zaraz',
+        }
+    },
 }
+
+# Common products that appear in all category queries
+COMMON_PRODUCTS = {
+    'support': 'Support',
+    'fundamentals': 'Fundamentals',
+    'terraform': 'Terraform',
+}
+
+
+def get_tracked_products(categories=None):
+    """Get products to track based on selected categories.
+    
+    Args:
+        categories: List of category keys (e.g., ['app_perf', 'app_sec']).
+                   If None, returns all products from all categories.
+    
+    Returns:
+        Dictionary mapping product directory to display name.
+    """
+    products = dict(COMMON_PRODUCTS)  # Always include common products
+    
+    if categories is None:
+        # Include all categories
+        for cat_data in CATEGORIES.values():
+            products.update(cat_data['products'])
+    else:
+        # Include only specified categories
+        for cat_key in categories:
+            if cat_key in CATEGORIES:
+                products.update(CATEGORIES[cat_key]['products'])
+    
+    return products
 
 # Patterns to identify trivial changes (exclude these)
 TRIVIAL_PATTERNS = [
@@ -127,12 +248,12 @@ def is_significant_change(commit_subject):
     return any(re.search(pattern, subject_lower, re.IGNORECASE) for pattern in SIGNIFICANT_PATTERNS)
 
 
-def extract_product_from_path(file_path):
+def extract_product_from_path(file_path, tracked_products):
     """Extract product name from file path."""
     match = re.match(r'src/content/docs/([^/]+)/', file_path)
     if match:
         product_dir = match.group(1)
-        return TRACKED_PRODUCTS.get(product_dir, product_dir)
+        return tracked_products.get(product_dir, None)
     return None
 
 
@@ -212,7 +333,13 @@ def main():
     parser.add_argument('--repo', type=str, required=True,
                         help='Path to cloudflare-docs repository')
     parser.add_argument('--month', type=str, help='Month in YYYY-MM format (default: last month)')
-    parser.add_argument('--products', type=str, nargs='+', help='Specific products to track')
+    parser.add_argument('--category', type=str, nargs='+',
+                        choices=['app_perf', 'app_sec', 'cf1', 'platform', 'dev_plat'],
+                        help='Category to track: app_perf (Application Performance), '
+                             'app_sec (Application Security), cf1 (Cloudflare One), '
+                             'platform (Platform), dev_plat (Developer Platform). '
+                             'Default: all categories')
+    parser.add_argument('--products', type=str, nargs='+', help='Specific products to track (overrides --category)')
     parser.add_argument('--include-trivial', action='store_true', help='Include trivial changes')
     parser.add_argument('--output', type=str, help='Output file (default: stdout)')
     
@@ -244,7 +371,21 @@ def main():
     month_name = start_date.strftime('%B %Y')
     
     # Determine products to track
-    products_to_track = args.products if args.products else list(TRACKED_PRODUCTS.keys())
+    if args.products:
+        # Specific products override category selection
+        tracked_products = get_tracked_products()  # Get all to validate
+        products_to_track = args.products
+        # Filter tracked_products to only include specified products
+        tracked_products = {k: v for k, v in tracked_products.items() if k in products_to_track}
+    else:
+        # Use category selection (or all if not specified)
+        tracked_products = get_tracked_products(args.category)
+        products_to_track = list(tracked_products.keys())
+    
+    # Display category info
+    if args.category:
+        cat_names = [CATEGORIES[c]['name'] for c in args.category]
+        print(f"Categories: {', '.join(cat_names)}")
     
     print(f"Repository: {REPO_PATH}")
     print(f"Tracking changes for {month_name}...")
@@ -270,7 +411,7 @@ def main():
         # Get changed files to determine product
         files = get_changed_files(commit['hash'])
         for file_path in files:
-            product = extract_product_from_path(file_path)
+            product = extract_product_from_path(file_path, tracked_products)
             if product and commit not in commits_by_product[product]:
                 commits_by_product[product].append(commit)
     

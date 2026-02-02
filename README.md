@@ -54,9 +54,21 @@ Track changes for a specific month:
 python3 track-doc-changes.py --repo /path/to/cloudflare-docs --month 2024-12
 ```
 
+### Track by Category
+
+Focus on a specific category:
+```bash
+python3 track-doc-changes.py --repo /path/to/cloudflare-docs --month 2024-12 --category app_perf
+```
+
+Track multiple categories:
+```bash
+python3 track-doc-changes.py --repo /path/to/cloudflare-docs --month 2024-12 --category app_perf app_sec
+```
+
 ### Track Specific Products
 
-Focus on specific product areas:
+Override categories and focus on specific products:
 ```bash
 python3 track-doc-changes.py --repo /path/to/cloudflare-docs --month 2024-12 --products cache dns ssl
 ```
@@ -81,31 +93,35 @@ python3 track-doc-changes.py --repo /path/to/cloudflare-docs --month 2024-12 --i
 |----------|----------|-------------|
 | `--repo` | Yes | Path to the cloudflare-docs repository |
 | `--month` | No | Month in YYYY-MM format (default: last month) |
-| `--products` | No | Specific products to track (space-separated list) |
+| `--category` | No | Category to track: `app_perf`, `app_sec`, `cf1`, `platform`, `dev_plat` (default: all) |
+| `--products` | No | Specific products to track (overrides `--category`) |
 | `--include-trivial` | No | Include trivial changes like typos and formatting |
 | `--output` | No | Output file path (default: stdout) |
 
-## Tracked Products
+## Categories
 
-The script tracks the following product areas by default:
+The script organizes products into 5 categories:
 
-- Cache
-- Speed
-- Load Balancing
-- Automatic Platform Optimization
-- SSL/TLS
-- DNS
-- Spectrum
-- Health Checks
+### Application Performance (`app_perf`)
+Argo Smart Routing, Automatic Platform Optimization, Cache, Cloudflare for SaaS, Data Localization, DNS, Health Checks, Load Balancing, Logs, Rules, Speed, SSL/TLS, Version Management, 1.1.1.1
+
+### Application Security (`app_sec`)
+API Shield, Bot Management, Cloudflare Challenges, DDoS Protection, Firewall, Log Explorer, Page Shield, Ruleset Engine, Security, Security Center, Smart Shield, Turnstile, WAF, Waiting Room
+
+### Cloudflare One (`cf1`)
+Browser Rendering, BYOIP, China Network, Client IP Geolocation, Cloudflare One, Email Security, Magic Cloud Networking, Magic Firewall, Magic Network Monitoring, Magic Transit, Magic WAN, Network, Network Error Logging, Network Interconnect, Spectrum, WARP Client
+
+### Platform (`platform`)
+Analytics, Billing, Notifications, Pulumi, Radar, Registrar, Tenant, Time Services
+
+### Developer Platform (`dev_plat`)
+Agents, AI Crawl Control, AI Gateway, AI Search, Containers, D1, DMARC Management, Durable Objects, Email Routing, Google Tag Gateway, Hyperdrive, Images, KV, Pages, Pipelines, Queues, R2, R2 SQL, Realtime, Sandbox, Secrets Store, Stream, Vectorize, Web3, Workers, Workers AI, Workers VPC, Workflows, Zaraz
+
+### Always Included
+The following products are always included regardless of category selection:
 - Support
-- Logs
-- Analytics
-- Cloudflare for SaaS
-- Notifications
-- Rules
-- Smart Shield
+- Fundamentals
 - Terraform
-- Version Management
 
 ## Output Format
 
@@ -125,23 +141,33 @@ Update to the DNS documentation: Update DNSSEC configuration steps
 
 You can customize the script by editing:
 
-1. **TRACKED_PRODUCTS**: Add or remove products to track
+1. **CATEGORIES**: Add or remove products within categories
 2. **TRIVIAL_PATTERNS**: Adjust what counts as trivial changes
 3. **SIGNIFICANT_PATTERNS**: Define patterns for significant changes
 
 ## Examples
 
-### Example 1: Monthly Report for Application Performance Products
+### Example 1: Monthly Report for Application Performance Category
 
 ```bash
 python3 track-doc-changes.py \
   --repo ~/cloudflare-docs \
   --month 2024-12 \
-  --products cache speed load-balancing dns \
+  --category app_perf \
   --output december-app-performance.txt
 ```
 
-### Example 2: All Changes Including Trivial Ones
+### Example 2: Track Multiple Categories
+
+```bash
+python3 track-doc-changes.py \
+  --repo ~/cloudflare-docs \
+  --month 2024-12 \
+  --category app_sec cf1 \
+  --output december-security-network.txt
+```
+
+### Example 3: All Changes Including Trivial Ones
 
 ```bash
 python3 track-doc-changes.py \
@@ -151,7 +177,7 @@ python3 track-doc-changes.py \
   --output december-all-changes.txt
 ```
 
-### Example 3: Quick Check of Last Month
+### Example 4: Quick Check of Last Month
 
 ```bash
 python3 track-doc-changes.py --repo ~/cloudflare-docs
