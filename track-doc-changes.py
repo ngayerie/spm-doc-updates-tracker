@@ -404,11 +404,16 @@ def changelog_file_to_url(file_path):
     if not file_path.startswith('src/content/changelog/'):
         return None
     
-    # Remove src/content/ prefix and file extension
-    path = file_path.replace('src/content/', '')
-    path = re.sub(r'\.mdx?$', '', path)
+    # Extract just the filename (without category directory)
+    # e.g., src/content/changelog/fundamentals/2026-01-19-http3-499-reporting-improvement.mdx
+    # becomes: changelog/2026-01-19-http3-499-reporting-improvement/
+    match = re.match(r'src/content/changelog/[^/]+/(.+)\.mdx?$', file_path)
+    if match:
+        filename = match.group(1).lower()  # Lowercase for URL
+        filename = filename.replace('.', '')  # Remove dots (site sanitizes them)
+        return f"{BASE_URL}/changelog/{filename}/"
     
-    return f"{BASE_URL}/{path}/"
+    return None
 
 
 def file_to_url(file_path):

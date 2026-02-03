@@ -148,10 +148,10 @@ Changelog entries are filtered by the `date` field in their frontmatter, not by 
 # New Changelog Entries - December 2024
 
 New changelog entry for WAF: WAF Release - 2024-12-15
-   - https://developers.cloudflare.com/changelog/waf/2024-12-15-waf-release/
+   - https://developers.cloudflare.com/changelog/2024-12-15-waf-release/
 
 New changelog entry for Workers: Workers now supports Node.js 20
-   - https://developers.cloudflare.com/changelog/workers/2024-12-10-nodejs-20/
+   - https://developers.cloudflare.com/changelog/2024-12-10-nodejs-20/
 ```
 
 ## Customization
