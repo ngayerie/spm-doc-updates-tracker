@@ -637,8 +637,8 @@ def main():
     summary = generate_summary(commits_by_product, month_name)
     changelog_summary = generate_changelog_summary(changelog_by_product, month_name)
 
-    # Put changelog updates first
-    full_output = f"{changelog_summary.strip()}\n\n{summary.strip()}\n"
+    # Put changelog updates first, with month/year title at the top
+    full_output = f"{month_name}\n\n{changelog_summary.strip()}\n\n{summary.strip()}\n"
 
     # Output
     if args.output:
