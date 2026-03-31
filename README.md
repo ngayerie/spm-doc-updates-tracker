@@ -111,7 +111,7 @@ Argo Smart Routing, Automatic Platform Optimization, Cache, Cloudflare for SaaS,
 API Shield, Bot Management, Cloudflare Challenges, DDoS Protection, Firewall, Log Explorer, Page Shield, Ruleset Engine, Security, Security Center, Smart Shield, Turnstile, WAF, Waiting Room
 
 ### Cloudflare One (`cf1`)
-Browser Rendering, BYOIP, China Network, Client IP Geolocation, Cloudflare One, Email Security, Magic Cloud Networking, Magic Firewall, Magic Network Monitoring, Magic Transit, Magic WAN, Network, Network Error Logging, Network Interconnect, Spectrum, WARP Client
+Browser Rendering, BYOIP, China Network, Client IP Geolocation, Cloudflare One, Email Security, Cloudflare One Multi-cloud Networking, Cloudflare Network Firewall, Network Flow, Magic Transit, Cloudflare WAN, Network, Network Error Logging, Network Interconnect, Spectrum, WARP Client
 
 ### Platform (`platform`)
 Analytics, Billing, Notifications, Pulumi, Radar, Registrar, Tenant, Time Services
